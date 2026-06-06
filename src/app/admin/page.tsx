@@ -1,0 +1,124 @@
+import { supabaseAdmin } from '@/lib/supabase'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
+import SendInviteForm from './SendInviteForm'
+
+export const dynamic = 'force-dynamic'
+
+async function checkAuth() {
+  const h = await headers()
+  const cookie = h.get('cookie') ?? ''
+  return cookie.includes(`admin_token=${process.env.ADMIN_SECRET}`)
+}
+
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ key?: string }> }) {
+  const { key } = await searchParams
+
+  if (key !== process.env.ADMIN_SECRET) {
+    const authed = await checkAuth()
+    if (!authed) redirect('/?access=denied')
+  }
+
+  const [{ data: waivers }, { data: attendance }] = await Promise.all([
+    supabaseAdmin.from('waivers').select('*').order('signed_at', { ascending: false }),
+    supabaseAdmin.from('attendance').select('*').order('game_date', { ascending: false }),
+  ])
+
+  const attending = attendance?.filter(a => a.status === 'attending') ?? []
+  const pending = attendance?.filter(a => a.status === 'pending') ?? []
+  const notAttending = attendance?.filter(a => a.status === 'not_attending') ?? []
+
+  const teamGroups = attending.reduce((acc: Record<string, typeof attending>, row) => {
+    const t = row.team ?? 'Unassigned'
+    if (!acc[t]) acc[t] = []
+    acc[t].push(row)
+    return acc
+  }, {})
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-black text-white">Admin Dashboard</h1>
+          <p className="text-slate-400 text-sm mt-1">Four Corners FC · Internal</p>
+        </div>
+        <span className="bg-green-900/50 border border-green-700 text-green-400 text-xs px-3 py-1 rounded-full">Admin</span>
+      </div>
+
+      <div className="grid sm:grid-cols-4 gap-4 mb-10">
+        {[
+          { label: 'Waivers Signed', value: waivers?.length ?? 0, color: 'text-green-400' },
+          { label: 'Attending', value: attending.length, color: 'text-green-400' },
+          { label: 'Pending RSVP', value: pending.length, color: 'text-yellow-400' },
+          { label: 'Not Attending', value: notAttending.length, color: 'text-red-400' },
+        ].map(s => (
+          <div key={s.label} className="bg-slate-800 rounded-2xl border border-slate-700 p-5 text-center">
+            <div className={`text-3xl font-black ${s.color}`}>{s.value}</div>
+            <div className="text-sm text-slate-400 mt-1">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* Send invite */}
+        <div>
+          <h2 className="text-xl font-bold text-white mb-4">Send Game Day Invite</h2>
+          <SendInviteForm adminSecret={process.env.ADMIN_SECRET!} />
+        </div>
+
+        {/* Attendance by team */}
+        <div>
+          <h2 className="text-xl font-bold text-white mb-4">Attending — By Team</h2>
+          {Object.keys(teamGroups).length === 0 ? (
+            <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 text-center text-slate-400 text-sm">No RSVPs yet</div>
+          ) : (
+            <div className="space-y-3">
+              {Object.entries(teamGroups).map(([team, players]) => (
+                <div key={team} className="bg-slate-800 rounded-2xl border border-slate-700 p-4">
+                  <h3 className="font-bold text-white mb-2">{team} ({players.length})</h3>
+                  <ul className="space-y-1">
+                    {players.map(p => (
+                      <li key={p.id} className="text-sm text-slate-300 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-green-500 rounded-full" />
+                        {p.player_name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Waivers table */}
+      <div className="mt-10">
+        <h2 className="text-xl font-bold text-white mb-4">All Signed Waivers ({waivers?.length ?? 0})</h2>
+        <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-900 border-b border-slate-700 text-xs text-slate-400">
+              <tr>
+                <th className="text-left p-3 pl-4">Name</th>
+                <th className="text-left p-3">Email</th>
+                <th className="text-left p-3">Team</th>
+                <th className="text-left p-3">Phone</th>
+                <th className="text-left p-3 pr-4">Signed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {waivers?.map(w => (
+                <tr key={w.id} className="border-b border-slate-700/50 last:border-0 hover:bg-slate-700/30">
+                  <td className="p-3 pl-4 font-medium text-white">{w.first_name} {w.last_name}</td>
+                  <td className="p-3 text-slate-300">{w.email}</td>
+                  <td className="p-3 text-slate-300">{w.team ?? '—'}</td>
+                  <td className="p-3 text-slate-400">{w.phone ?? '—'}</td>
+                  <td className="p-3 pr-4 text-slate-400">{new Date(w.signed_at).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
