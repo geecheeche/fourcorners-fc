@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { Resend } from 'resend'
 import { v4 as uuidv4 } from 'uuid'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() { return new Resend(process.env.RESEND_API_KEY ?? '') }
 
 export async function POST(req: NextRequest) {
   // Protect with admin secret
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
       const rsvpBase = `${process.env.NEXT_PUBLIC_APP_URL}/attendance/${token}`
 
-      await resend.emails.send({
+      await getResend().emails.send({
         from: 'Four Corners FC <noreply@fourcornersfc.com>',
         to: player.email,
         subject: `⚽ Game Day! FCFC — ${gameDate}`,

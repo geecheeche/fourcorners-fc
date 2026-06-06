@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() { return new Resend(process.env.RESEND_API_KEY ?? '') }
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     if (dbError) throw new Error(dbError.message)
 
     // Send confirmation email
-    await resend.emails.send({
+    await getResend().emails.send({
       from: 'Four Corners FC <noreply@fourcornersfc.com>',
       to: email,
       subject: 'Waiver Received — Welcome to Four Corners FC!',
