@@ -1,23 +1,20 @@
 import { supabaseAdmin } from '@/lib/supabase'
-import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import AdminLogin from './AdminLogin'
 import SendInviteForm from './SendInviteForm'
 import FixturesEditor from './FixturesEditor'
+import LogoutButton from './LogoutButton'
 
 export const dynamic = 'force-dynamic'
 
-async function checkAuth() {
-  const h = await headers()
-  const cookie = h.get('cookie') ?? ''
-  return cookie.includes(`admin_token=${process.env.ADMIN_SECRET}`)
+async function isAuthed() {
+  const jar = await cookies()
+  return jar.get('fcfc_admin')?.value === process.env.ADMIN_SECRET
 }
 
-export default async function AdminPage({ searchParams }: { searchParams: Promise<{ key?: string }> }) {
-  const { key } = await searchParams
-
-  if (key !== process.env.ADMIN_SECRET) {
-    const authed = await checkAuth()
-    if (!authed) redirect('/?access=denied')
+export default async function AdminPage() {
+  if (!(await isAuthed())) {
+    return <AdminLogin />
   }
 
   const [{ data: waivers }, { data: attendance }, { data: fixtures }, { data: standings }] = await Promise.all([
@@ -45,9 +42,13 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <h1 className="text-3xl font-black text-white">Admin Dashboard</h1>
           <p className="text-slate-400 text-sm mt-1">Four Corners FC · Internal</p>
         </div>
-        <span className="bg-green-900/50 border border-green-700 text-green-400 text-xs px-3 py-1 rounded-full">Admin</span>
+        <div className="flex items-center gap-3">
+          <span className="bg-green-900/50 border border-green-700 text-green-400 text-xs px-3 py-1 rounded-full">Admin</span>
+          <LogoutButton />
+        </div>
       </div>
 
+      {/* Stats */}
       <div className="grid sm:grid-cols-4 gap-4 mb-10">
         {[
           { label: 'Waivers Signed', value: waivers?.length ?? 0, color: 'text-green-400' },
@@ -63,13 +64,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Send invite */}
         <div>
           <h2 className="text-xl font-bold text-white mb-4">Send Game Day Invite</h2>
           <SendInviteForm adminSecret={process.env.ADMIN_SECRET!} />
         </div>
-
-        {/* Attendance by team */}
         <div>
           <h2 className="text-xl font-bold text-white mb-4">Attending — By Team</h2>
           {Object.keys(teamGroups).length === 0 ? (

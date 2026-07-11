@@ -47,6 +47,17 @@ export const TEAMS = [
 
 export const FIXTURES = [
   {
+    id: 0,
+    date: '2026-07-11',
+    time: '2:30 PM',
+    home: 'Gang Green',
+    away: 'Big Blue',
+    homeScore: null as number | null,
+    awayScore: null as number | null,
+    venue: 'Greenbriar Local Park, 1225 Glen Rd, Potomac MD 20854',
+    status: 'upcoming' as 'upcoming' | 'completed' | 'postponed',
+  },
+  {
     id: 1,
     date: '2026-06-14',
     time: '10:00 AM',
