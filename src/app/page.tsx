@@ -38,6 +38,42 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Current Season banner */}
+      <section className="bg-gradient-to-r from-green-900/60 via-slate-800 to-blue-900/40 border-b border-slate-700">
+        <div className="max-w-6xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-green-600/30 border border-green-600 flex items-center justify-center text-lg flex-shrink-0">
+              🌞
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-green-400 uppercase tracking-widest">Current Season</span>
+                <span className="bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">Active</span>
+              </div>
+              <p className="text-white font-bold text-lg leading-tight">Summer Season 2026</p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 sm:items-center text-sm pl-14 sm:pl-0">
+            <div className="flex items-center gap-2 text-slate-300">
+              <svg className="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Runs until <span className="font-semibold text-white ml-1">August 1, 2026</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-300">
+              <svg className="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <div>
+                <span className="font-semibold text-white">Greenbriar Local Park</span>
+                <span className="text-slate-400 ml-1">· 1225 Glen Rd, Potomac MD 20854</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Teams strip */}
       <section className="bg-slate-800 border-y border-slate-700">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-center gap-6 flex-wrap text-sm font-semibold">
