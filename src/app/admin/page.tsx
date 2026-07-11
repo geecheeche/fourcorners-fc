@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import SendInviteForm from './SendInviteForm'
+import FixturesEditor from './FixturesEditor'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,9 +20,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     if (!authed) redirect('/?access=denied')
   }
 
-  const [{ data: waivers }, { data: attendance }] = await Promise.all([
+  const [{ data: waivers }, { data: attendance }, { data: fixtures }, { data: standings }] = await Promise.all([
     supabaseAdmin.from('waivers').select('*').order('signed_at', { ascending: false }),
     supabaseAdmin.from('attendance').select('*').order('game_date', { ascending: false }),
+    supabaseAdmin.from('fixtures').select('*').order('date', { ascending: true }),
+    supabaseAdmin.from('standings').select('*'),
   ])
 
   const attending = attendance?.filter(a => a.status === 'attending') ?? []
@@ -89,6 +92,16 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             </div>
           )}
         </div>
+      </div>
+
+      {/* Fixtures & Standings editor */}
+      <div className="mt-10">
+        <h2 className="text-xl font-bold text-white mb-4">Fixtures & Standings Editor</h2>
+        <FixturesEditor
+          initialFixtures={fixtures ?? []}
+          initialStandings={standings ?? []}
+          adminSecret={process.env.ADMIN_SECRET!}
+        />
       </div>
 
       {/* Waivers table */}
