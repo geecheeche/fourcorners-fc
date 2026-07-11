@@ -55,13 +55,25 @@ create table standings (
 -- Seed initial standings rows
 insert into standings (team) values ('Gang Green'), ('White Noise'), ('Crunch'), ('Big Blue');
 
+create table game_signups (
+  id uuid default gen_random_uuid() primary key,
+  waiver_id uuid references waivers(id) on delete cascade,
+  first_name text not null,
+  team text,
+  game_date date not null,
+  signed_up_at timestamptz not null default now(),
+  unique(waiver_id, game_date)
+);
+
 -- Row level security: service role only for all operations
 alter table waivers enable row level security;
 alter table attendance enable row level security;
 alter table fixtures enable row level security;
 alter table standings enable row level security;
+alter table game_signups enable row level security;
 
 create policy "service_role_all_waivers" on waivers for all using (auth.role() = 'service_role');
 create policy "service_role_all_attendance" on attendance for all using (auth.role() = 'service_role');
 create policy "service_role_all_fixtures" on fixtures for all using (auth.role() = 'service_role');
 create policy "service_role_all_standings" on standings for all using (auth.role() = 'service_role');
+create policy "service_role_all_signups" on game_signups for all using (auth.role() = 'service_role');

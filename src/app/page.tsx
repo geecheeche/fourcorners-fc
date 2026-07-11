@@ -1,9 +1,49 @@
+export const dynamic = 'force-dynamic'
+
 import Image from 'next/image'
 import Link from 'next/link'
-import { TEAMS, FIXTURES, STANDINGS } from '@/lib/data'
+import { TEAMS } from '@/lib/data'
+import { supabaseAdmin } from '@/lib/supabase'
+import GameSignup from '@/components/GameSignup'
 
-export default function HomePage() {
-  const upcoming = FIXTURES.filter(f => f.status === 'upcoming').slice(0, 2)
+async function getData() {
+  try {
+    const [{ data: waivers }, { data: fixtures }] = await Promise.all([
+      supabaseAdmin.from('waivers').select('first_name, team'),
+      supabaseAdmin.from('fixtures').select('*').eq('status', 'upcoming').order('date').limit(3),
+    ])
+
+    // Next weekend game (nearest upcoming fixture)
+    const nextGame = fixtures?.[0] ?? null
+
+    // Game signups for next game
+    let signups: { id: string; first_name: string; team: string | null }[] = []
+    if (nextGame) {
+      const { data } = await supabaseAdmin
+        .from('game_signups')
+        .select('id, first_name, team')
+        .eq('game_date', nextGame.date)
+        .order('signed_up_at')
+      signups = data ?? []
+    }
+
+    // Team rosters from waivers
+    const rosterByTeam: Record<string, string[]> = {}
+    for (const w of waivers ?? []) {
+      const team = w.team ?? 'Unassigned'
+      if (!rosterByTeam[team]) rosterByTeam[team] = []
+      rosterByTeam[team].push(w.first_name)
+    }
+
+    return { fixtures: fixtures ?? [], nextGame, signups, rosterByTeam }
+  } catch {
+    return { fixtures: [], nextGame: null, signups: [], rosterByTeam: {} }
+  }
+}
+
+export default async function HomePage() {
+  const { fixtures, nextGame, signups, rosterByTeam } = await getData()
+  const upcoming = fixtures.slice(0, 2)
 
   return (
     <div>
@@ -81,6 +121,7 @@ export default function HomePage() {
             <Link key={t.id} href={`/teams#${t.id}`} className="flex items-center gap-2 hover:text-green-400 transition-colors">
               <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: t.color }} />
               {t.name}
+              <span className="text-slate-500 font-normal">({rosterByTeam[t.name]?.length ?? 0})</span>
             </Link>
           ))}
         </div>
@@ -88,41 +129,71 @@ export default function HomePage() {
 
       {/* Main content */}
       <div className="max-w-6xl mx-auto px-4 py-16 grid lg:grid-cols-3 gap-10">
+        {/* Teams with rosters */}
         <div className="lg:col-span-2">
           <h2 className="text-2xl font-bold mb-6 text-white">The Teams</h2>
           <div className="grid sm:grid-cols-2 gap-4">
-            {TEAMS.map(t => (
-              <Link key={t.id} href={`/teams#${t.id}`}
-                className="group bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 hover:border-slate-500 transition-all hover:-translate-y-0.5">
-                <div className="h-2" style={{ backgroundColor: t.color }} />
-                <div className="p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold text-lg text-white">{t.name}</h3>
-                    <span className="text-xs bg-slate-700 px-2 py-1 rounded-full text-slate-300">{t.shirtColor} shirts</span>
+            {TEAMS.map(t => {
+              const players = rosterByTeam[t.name] ?? []
+              return (
+                <Link key={t.id} href={`/teams#${t.id}`}
+                  className="group bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 hover:border-slate-500 transition-all hover:-translate-y-0.5">
+                  <div className="h-2" style={{ backgroundColor: t.color }} />
+                  <div className="p-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-bold text-lg text-white">{t.name}</h3>
+                      <span className="text-xs bg-slate-700 px-2 py-1 rounded-full text-slate-300">{t.shirtColor} shirts</span>
+                    </div>
+                    <p className="text-sm text-slate-400 mb-3">{t.description}</p>
+
+                    {/* Player count + names */}
+                    <div className="border-t border-slate-700 pt-3 mt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Squad</span>
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: t.color }}>
+                          {players.length} {players.length === 1 ? 'player' : 'players'}
+                        </span>
+                      </div>
+                      {players.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {players.map((name, i) => (
+                            <span key={i} className="text-xs px-2 py-0.5 rounded-full text-slate-300 bg-slate-700 border border-slate-600">
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-600 italic">No players yet</p>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-slate-400 mb-3">{t.description}</p>
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Captain: {t.captain}
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              )
+            })}
           </div>
         </div>
 
+        {/* Sidebar */}
         <div className="space-y-6">
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5">
-            <h2 className="font-bold text-lg mb-4 text-white">Next Fixtures</h2>
-            {upcoming.length === 0 ? (
-              <p className="text-slate-400 text-sm">No upcoming fixtures.</p>
-            ) : (
+          {/* Next game signup */}
+          {nextGame ? (
+            <GameSignup gameDate={nextGame.date} initialSignups={signups} />
+          ) : (
+            <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5 text-center">
+              <p className="text-slate-400 text-sm">No upcoming game scheduled yet.</p>
+            </div>
+          )}
+
+          {/* Upcoming fixtures */}
+          {upcoming.length > 0 && (
+            <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5">
+              <h2 className="font-bold text-lg mb-4 text-white">Next Fixtures</h2>
               <div className="space-y-3">
-                {upcoming.map(f => (
+                {upcoming.map((f: { id: string; date: string; time: string; home: string; away: string }) => (
                   <div key={f.id} className="bg-slate-900 rounded-xl p-3">
-                    <p className="text-xs text-slate-500 mb-2">{new Date(f.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {f.time}</p>
+                    <p className="text-xs text-slate-500 mb-2">
+                      {new Date(f.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {f.time}
+                    </p>
                     <div className="flex items-center justify-between text-sm font-semibold">
                       <span>{f.home}</span>
                       <span className="text-slate-500 text-xs">vs</span>
@@ -131,43 +202,13 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-            )}
-            <Link href="/fixtures" className="block mt-4 text-center text-sm text-green-400 hover:text-green-300 font-medium">
-              Full Schedule →
-            </Link>
-          </div>
+              <Link href="/fixtures" className="block mt-4 text-center text-sm text-green-400 hover:text-green-300 font-medium">
+                Full Schedule →
+              </Link>
+            </div>
+          )}
 
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-5">
-            <h2 className="font-bold text-lg mb-4 text-white">League Table</h2>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-slate-500 border-b border-slate-700">
-                  <th className="text-left pb-2">Team</th>
-                  <th className="text-center pb-2">P</th>
-                  <th className="text-center pb-2">Pts</th>
-                </tr>
-              </thead>
-              <tbody>
-                {STANDINGS.map((s, i) => (
-                  <tr key={s.team} className="border-b border-slate-700/50 last:border-0">
-                    <td className="py-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-500">{i + 1}</span>
-                        <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: TEAMS.find(t => t.name === s.team)?.color }} />
-                        <span className="font-medium text-slate-200">{s.team}</span>
-                      </div>
-                    </td>
-                    <td className="text-center text-slate-400">{s.played}</td>
-                    <td className="text-center font-bold text-white">{s.points}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <Link href="/fixtures#log" className="block mt-4 text-center text-sm text-green-400 hover:text-green-300 font-medium">
-              Full Standings →
-            </Link>
-          </div>
-
+          {/* Waiver CTA */}
           <div className="bg-gradient-to-br from-green-900/60 to-slate-800 rounded-2xl border border-green-800 p-5">
             <h3 className="font-bold text-white mb-2">Ready to play?</h3>
             <p className="text-sm text-slate-300 mb-4">Sign your waiver online and you are in. Takes less than 2 minutes.</p>
@@ -185,8 +226,8 @@ export default function HomePage() {
           <div className="grid sm:grid-cols-3 gap-6">
             {[
               { step: '01', title: 'Sign Your Waiver', desc: 'Complete the digital liability waiver on this site. Your signature is stored securely.', icon: '✍️' },
-              { step: '02', title: 'Get the Email', desc: 'When a game day is scheduled, you will receive an email invite with an RSVP link.', icon: '📧' },
-              { step: '03', title: 'Show Up & Play', desc: 'Click your link, confirm attendance, and show up ready to play for your team.', icon: '⚽' },
+              { step: '02', title: 'Sign Up for Games', desc: 'Enter your email on the homepage to sign up for next weekend\'s game. No login needed.', icon: '📋' },
+              { step: '03', title: 'Show Up & Play', desc: 'You\'ll also get email invites before each game day. Just show up ready to play.', icon: '⚽' },
             ].map(s => (
               <div key={s.step} className="bg-slate-900 rounded-2xl p-6 border border-slate-700">
                 <div className="text-3xl mb-3">{s.icon}</div>
