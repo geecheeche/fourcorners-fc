@@ -8,7 +8,7 @@ function getResend() { return new Resend(process.env.RESEND_API_KEY ?? '') }
 export async function POST(req: NextRequest) {
   // Protect with admin secret
   const authHeader = req.headers.get('x-admin-secret')
-  if (authHeader !== process.env.ADMIN_SECRET) {
+  if (!process.env.ADMIN_SECRET || authHeader !== process.env.ADMIN_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

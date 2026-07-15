@@ -4,12 +4,13 @@ import { cookies } from 'next/headers'
 export async function POST(req: NextRequest) {
   const { password } = await req.json()
 
-  if (password !== process.env.ADMIN_SECRET) {
+  const secret = process.env.ADMIN_SECRET
+  if (!secret || password !== secret) {
     return NextResponse.json({ error: 'Incorrect password' }, { status: 401 })
   }
 
   const jar = await cookies()
-  jar.set('fcfc_admin', process.env.ADMIN_SECRET!, {
+  jar.set('fcfc_admin', secret, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
