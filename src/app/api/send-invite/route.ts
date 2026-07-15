@@ -3,8 +3,6 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { Resend } from 'resend'
 import { v4 as uuidv4 } from 'uuid'
 
-function getResend() { return new Resend(process.env.RESEND_API_KEY ?? '') }
-
 export async function POST(req: NextRequest) {
   // Protect with admin secret
   const authHeader = req.headers.get('x-admin-secret')
@@ -14,21 +12,30 @@ export async function POST(req: NextRequest) {
 
   try {
     const { gameDate, gameTime, venue, matchups } = await req.json()
+    if (!gameDate || !gameTime || !venue) {
+      return NextResponse.json({ error: 'Missing game date, time, or venue.' }, { status: 400 })
+    }
+
+    if (!process.env.RESEND_API_KEY) {
+      return NextResponse.json({ error: 'RESEND_API_KEY is not configured on the server.' }, { status: 500 })
+    }
+    const resend = new Resend(process.env.RESEND_API_KEY)
 
     // Fetch all waiver signers
     const { data: players, error } = await supabaseAdmin
       .from('waivers')
       .select('id, first_name, last_name, email, team')
 
-    if (error) throw new Error(error.message)
+    if (error) throw new Error(`Database error: ${error.message}`)
     if (!players?.length) return NextResponse.json({ message: 'No players found', sent: 0 })
 
     let sent = 0
+    const failures: string[] = []
     for (const player of players) {
       const token = uuidv4()
 
       // Create attendance record
-      await supabaseAdmin.from('attendance').insert({
+      const { error: insertError } = await supabaseAdmin.from('attendance').insert({
         player_id: player.id,
         player_email: player.email,
         player_name: `${player.first_name} ${player.last_name}`,
@@ -39,10 +46,14 @@ export async function POST(req: NextRequest) {
         token,
         status: 'pending',
       })
+      if (insertError) {
+        failures.push(`${player.email}: ${insertError.message}`)
+        continue
+      }
 
       const rsvpBase = `${process.env.NEXT_PUBLIC_APP_URL}/attendance/${token}`
 
-      await getResend().emails.send({
+      const { error: sendError } = await resend.emails.send({
         from: 'Four Corners FC <noreply@fourcornersfc.com>',
         to: player.email,
         subject: `⚽ Game Day! FCFC — ${gameDate}`,
@@ -66,12 +77,20 @@ export async function POST(req: NextRequest) {
           </div>
         `,
       })
+      if (sendError) {
+        failures.push(`${player.email}: ${sendError.message}`)
+        continue
+      }
       sent++
+
+      // Resend allows ~2 requests/second — pace the sends to avoid rate limiting
+      if (players.length > 1) await new Promise(r => setTimeout(r, 600))
     }
 
-    return NextResponse.json({ success: true, sent })
+    return NextResponse.json({ success: failures.length === 0, sent, failed: failures.length, failures })
   } catch (err: unknown) {
-    console.error(err)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    console.error('send-invite error:', err)
+    const message = err instanceof Error ? err.message : 'Unknown server error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
