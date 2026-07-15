@@ -72,8 +72,8 @@ alter table fixtures enable row level security;
 alter table standings enable row level security;
 alter table game_signups enable row level security;
 
-create policy "service_role_all_waivers" on waivers for all using (auth.role() = 'service_role');
-create policy "service_role_all_attendance" on attendance for all using (auth.role() = 'service_role');
-create policy "service_role_all_fixtures" on fixtures for all using (auth.role() = 'service_role');
-create policy "service_role_all_standings" on standings for all using (auth.role() = 'service_role');
-create policy "service_role_all_signups" on game_signups for all using (auth.role() = 'service_role');
+create policy "service_role_all_waivers" on waivers for all to service_role using (true) with check (true);
+create policy "service_role_all_attendance" on attendance for all to service_role using (true) with check (true);
+create policy "service_role_all_fixtures" on fixtures for all to service_role using (true) with check (true);
+create policy "service_role_all_standings" on standings for all to service_role using (true) with check (true);
+create policy "service_role_all_signups" on game_signups for all to service_role using (true) with check (true);
