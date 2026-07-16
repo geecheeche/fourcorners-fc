@@ -30,9 +30,21 @@ export default function FixturesEditor({ initialFixtures, initialStandings, admi
 
   function flash(m: string) { setMsg(m); setTimeout(() => setMsg(''), 3000) }
 
+  async function apiError(res: Response, fallback: string) {
+    const d = await res.json().catch(() => null)
+    flash(`❌ ${d?.error ?? fallback}`)
+  }
+
   async function addFixture() {
-    const res = await fetch('/api/fixtures', { method: 'POST', headers, body: JSON.stringify(newFixture) })
-    if (!res.ok) { flash('❌ Failed to add'); return }
+    if (!newFixture.date) { flash('❌ Pick a date first'); return }
+    // Score inputs are strings; the DB columns are integers — send null when empty
+    const payload = {
+      ...newFixture,
+      home_score: newFixture.home_score === '' ? null : Number(newFixture.home_score),
+      away_score: newFixture.away_score === '' ? null : Number(newFixture.away_score),
+    }
+    const res = await fetch('/api/fixtures', { method: 'POST', headers, body: JSON.stringify(payload) })
+    if (!res.ok) { await apiError(res, 'Failed to add'); return }
     const added = await res.json()
     setFixtures(prev => [...prev, added].sort((a, b) => a.date.localeCompare(b.date)))
     setNewFixture({ ...BLANK_FIXTURE })
@@ -41,7 +53,7 @@ export default function FixturesEditor({ initialFixtures, initialStandings, admi
 
   async function saveEdit(id: string) {
     const res = await fetch('/api/fixtures', { method: 'PATCH', headers, body: JSON.stringify({ id, ...editData }) })
-    if (!res.ok) { flash('❌ Failed to save'); return }
+    if (!res.ok) { await apiError(res, 'Failed to save'); return }
     const updated = await res.json()
     setFixtures(prev => prev.map(f => f.id === id ? updated : f))
     setEditingId(null)
@@ -50,14 +62,15 @@ export default function FixturesEditor({ initialFixtures, initialStandings, admi
 
   async function deleteFixture(id: string) {
     if (!confirm('Delete this fixture?')) return
-    await fetch('/api/fixtures', { method: 'DELETE', headers, body: JSON.stringify({ id }) })
+    const res = await fetch('/api/fixtures', { method: 'DELETE', headers, body: JSON.stringify({ id }) })
+    if (!res.ok) { await apiError(res, 'Failed to delete'); return }
     setFixtures(prev => prev.filter(f => f.id !== id))
     flash('✅ Deleted')
   }
 
   async function saveStanding(s: Standing) {
     const res = await fetch('/api/standings', { method: 'PATCH', headers, body: JSON.stringify(s) })
-    if (!res.ok) { flash('❌ Failed to save standing'); return }
+    if (!res.ok) { await apiError(res, 'Failed to save standing'); return }
     const updated = await res.json()
     setStandings(prev => prev.map(x => x.id === updated.id ? updated : x))
     flash('✅ Standing updated')
