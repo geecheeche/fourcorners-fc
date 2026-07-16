@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       .from('waivers')
       .select('id, first_name, last_name, email, team')
 
-    if (error) throw new Error(`Database error: ${error.message}`)
+    if (error) throw new Error(`Database error: ${error.message.slice(0, 300)}`)
     if (!players?.length) return NextResponse.json({ message: 'No players found', sent: 0 })
 
     let sent = 0

@@ -2,6 +2,18 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 let _supabaseAdmin: SupabaseClient | null = null
 
+// NEXT_PUBLIC_SUPABASE_URL must point at the Supabase project
+// (https://<ref>.supabase.co), not at this website — pointing it at the
+// app itself makes every query return the site's HTML as an "error".
+function assertSupabaseUrl(url: string) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  const sameAsApp = appUrl && url.replace(/\/+$/, '') === appUrl.replace(/\/+$/, '')
+  const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/.test(url)
+  if (sameAsApp || (!isLocal && !/^https:\/\/[a-z0-9-]+\.supabase\.(co|in|red)/.test(url))) {
+    throw new Error(`NEXT_PUBLIC_SUPABASE_URL is set to "${url}", which is not a Supabase project URL. Copy the Project URL (https://<project-ref>.supabase.co) from your Supabase dashboard's API settings.`)
+  }
+}
+
 // A publishable/anon key is subject to row-level security, which silently
 // returns zero rows here instead of erroring. Catch that misconfiguration
 // up front — the server must use the secret (service-role) key.
@@ -29,6 +41,7 @@ export function getSupabaseAdmin(): SupabaseClient {
     // Either works here — accept the common env var names for both.
     const key = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY
     if (!url || !key) throw new Error('Supabase environment variables are not configured.')
+    assertSupabaseUrl(url)
     assertServerKey(key)
     _supabaseAdmin = createClient(url, key)
   }
