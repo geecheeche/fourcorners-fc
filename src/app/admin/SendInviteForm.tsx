@@ -17,7 +17,13 @@ export default function SendInviteForm({ adminSecret }: { adminSecret: string })
         body: JSON.stringify(form),
       })
       const d = await res.json()
-      setResult(res.ok ? `✅ Sent to ${d.sent} players` : `❌ ${d.error}`)
+      if (!res.ok) {
+        setResult(`❌ ${d.error}`)
+      } else if (d.failed > 0) {
+        setResult(`⚠️ Sent to ${d.sent} players, ${d.failed} failed: ${d.failures?.[0] ?? ''}`)
+      } else {
+        setResult(`✅ Sent to ${d.sent} players`)
+      }
     } catch {
       setResult('❌ Network error')
     } finally {

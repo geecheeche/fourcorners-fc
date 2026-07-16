@@ -8,8 +8,11 @@ import LogoutButton from './LogoutButton'
 export const dynamic = 'force-dynamic'
 
 async function isAuthed() {
+  // Fail closed: if ADMIN_SECRET is not configured, nobody is admin.
+  const secret = process.env.ADMIN_SECRET
+  if (!secret) return false
   const jar = await cookies()
-  return jar.get('fcfc_admin')?.value === process.env.ADMIN_SECRET
+  return jar.get('fcfc_admin')?.value === secret
 }
 
 export default async function AdminPage() {

@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { Resend } from 'resend'
 
-function getResend() { return new Resend(process.env.RESEND_API_KEY ?? '') }
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -39,22 +37,29 @@ export async function POST(req: NextRequest) {
 
     if (dbError) throw new Error(dbError.message)
 
-    // Send confirmation email
-    await getResend().emails.send({
-      from: 'Four Corners FC <noreply@fourcornersfc.com>',
-      to: email,
-      subject: 'Waiver Received — Welcome to Four Corners FC!',
-      html: `
-        <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0f172a;color:#f1f5f9;padding:32px;border-radius:16px">
-          <img src="${process.env.NEXT_PUBLIC_APP_URL}/fcfc.jpg" alt="FCFC" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:16px"/>
-          <h1 style="color:#4ade80;margin:0 0 8px">Welcome to FCFC, ${firstName}!</h1>
-          <p style="color:#94a3b8">Your waiver has been received and you are now registered with Four Corners FC.</p>
-          ${team ? `<p style="color:#94a3b8">Team: <strong style="color:#fff">${team}</strong></p>` : ''}
-          <p style="color:#94a3b8">You will receive an email with an RSVP link before each game day. Just click the link to confirm your attendance.</p>
-          <p style="color:#64748b;font-size:12px;margin-top:24px">Four Corners FC · Maryland</p>
-        </div>
-      `,
-    })
+    // Send confirmation email — best-effort. The waiver is already saved,
+    // so a missing Resend key or a send failure must not fail the request.
+    if (process.env.RESEND_API_KEY) {
+      try {
+        await new Resend(process.env.RESEND_API_KEY).emails.send({
+          from: 'Four Corners FC <noreply@fourcornersfc.com>',
+          to: email,
+          subject: 'Waiver Received — Welcome to Four Corners FC!',
+          html: `
+            <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0f172a;color:#f1f5f9;padding:32px;border-radius:16px">
+              <img src="${process.env.NEXT_PUBLIC_APP_URL}/fcfc.jpg" alt="FCFC" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:16px"/>
+              <h1 style="color:#4ade80;margin:0 0 8px">Welcome to FCFC, ${firstName}!</h1>
+              <p style="color:#94a3b8">Your waiver has been received and you are now registered with Four Corners FC.</p>
+              ${team ? `<p style="color:#94a3b8">Team: <strong style="color:#fff">${team}</strong></p>` : ''}
+              <p style="color:#94a3b8">You will receive an email with an RSVP link before each game day. Just click the link to confirm your attendance.</p>
+              <p style="color:#64748b;font-size:12px;margin-top:24px">Four Corners FC · Maryland</p>
+            </div>
+          `,
+        })
+      } catch (emailErr) {
+        console.error('Waiver confirmation email failed:', emailErr)
+      }
+    }
 
     return NextResponse.json({ success: true })
   } catch (err: unknown) {
