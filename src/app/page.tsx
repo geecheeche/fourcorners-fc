@@ -16,15 +16,28 @@ async function getData() {
     // Next weekend game (nearest upcoming fixture)
     const nextGame = fixtures?.[0] ?? null
 
-    // Game signups for next game
+    // Who's coming to the next game: homepage signups plus email RSVPs
+    // marked attending, deduped by waiver id for players who did both.
     let signups: { id: string; first_name: string; team: string | null }[] = []
     if (nextGame) {
-      const { data } = await supabaseAdmin
-        .from('game_signups')
-        .select('id, first_name, team')
-        .eq('game_date', nextGame.date)
-        .order('signed_up_at')
-      signups = data ?? []
+      const [{ data: widgetSignups }, { data: rsvps }] = await Promise.all([
+        supabaseAdmin
+          .from('game_signups')
+          .select('id, waiver_id, first_name, team')
+          .eq('game_date', nextGame.date)
+          .order('signed_up_at'),
+        supabaseAdmin
+          .from('attendance')
+          .select('id, player_id, player_name, team')
+          .eq('game_date', nextGame.date)
+          .eq('status', 'attending'),
+      ])
+      signups = (widgetSignups ?? []).map(s => ({ id: s.id, first_name: s.first_name, team: s.team }))
+      const seen = new Set((widgetSignups ?? []).map(s => s.waiver_id))
+      for (const r of rsvps ?? []) {
+        if (r.player_id && seen.has(r.player_id)) continue
+        signups.push({ id: r.id, first_name: (r.player_name ?? '').split(' ')[0], team: r.team })
+      }
     }
 
     // Team rosters from waivers
