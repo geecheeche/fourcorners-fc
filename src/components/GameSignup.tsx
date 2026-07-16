@@ -1,12 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { TEAMS } from '@/lib/data'
 
 type Signup = { id: string; first_name: string; team: string | null }
-
-function getTeamColor(name: string | null) {
-  return TEAMS.find(t => t.name === name)?.color ?? '#6b7280'
-}
 
 export default function GameSignup({ gameDate, initialSignups }: {
   gameDate: string
@@ -56,13 +51,6 @@ export default function GameSignup({ gameDate, initialSignups }: {
     setMsg('')
     setEmail('')
   }
-
-  const byTeam = TEAMS.map(t => ({
-    ...t,
-    players: signups.filter(s => s.team === t.name),
-  })).filter(t => t.players.length > 0)
-
-  const unassigned = signups.filter(s => !s.team)
 
   const formattedDate = new Date(gameDate + 'T00:00:00').toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric',
@@ -120,42 +108,7 @@ export default function GameSignup({ gameDate, initialSignups }: {
           <p className="text-red-400 text-xs -mt-2">{msg}</p>
         )}
 
-        {/* Player list by team */}
-        {signups.length > 0 ? (
-          <div className="space-y-3">
-            {byTeam.map(t => (
-              <div key={t.id}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: t.color }} />
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{t.name} ({t.players.length})</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5 pl-4">
-                  {t.players.map(p => (
-                    <span key={p.id} className="px-2.5 py-1 rounded-full text-xs font-medium text-white"
-                      style={{ backgroundColor: getTeamColor(p.team) + '33', border: `1px solid ${getTeamColor(p.team)}55` }}>
-                      {p.first_name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-            {unassigned.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-slate-500 flex-shrink-0" />
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Unassigned ({unassigned.length})</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5 pl-4">
-                  {unassigned.map(p => (
-                    <span key={p.id} className="px-2.5 py-1 rounded-full text-xs font-medium text-slate-300 bg-slate-700 border border-slate-600">
-                      {p.first_name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
+        {signups.length === 0 && (
           <p className="text-slate-500 text-sm text-center py-2">No sign-ups yet — be the first!</p>
         )}
       </div>

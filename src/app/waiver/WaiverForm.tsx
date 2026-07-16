@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react'
 import SignatureCanvas from 'react-signature-canvas'
 
-const TEAMS_LIST = ['Gang Green', 'White Noise', 'Crunch', 'Big Blue']
+const TEAMS_LIST = ['Gang Green', 'White Noise', 'Big Blue']
 
 export default function WaiverForm() {
   const sigRef = useRef<SignatureCanvas>(null)

@@ -54,7 +54,7 @@ export default function SendInviteForm({ adminSecret }: { adminSecret: string })
       <div>
         <label className="block text-xs text-slate-400 mb-1">Matchups (optional)</label>
         <input value={form.matchups} onChange={e => setForm(p => ({ ...p, matchups: e.target.value }))}
-          placeholder="e.g. Gang Green vs White Noise, Crunch vs Big Blue"
+          placeholder="e.g. Gang Green vs White Noise"
           className="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-green-500 text-sm" />
       </div>
       <button type="submit" disabled={loading}

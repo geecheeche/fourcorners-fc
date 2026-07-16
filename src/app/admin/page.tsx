@@ -27,9 +27,21 @@ export default async function AdminPage() {
     supabaseAdmin.from('standings').select('*'),
   ])
 
-  const attending = attendance?.filter(a => a.status === 'attending') ?? []
-  const pending = attendance?.filter(a => a.status === 'pending') ?? []
-  const notAttending = attendance?.filter(a => a.status === 'not_attending') ?? []
+  // Earlier invite sends could create duplicate rows per player+game;
+  // collapse them, letting an actual response win over a pending duplicate.
+  const rank: Record<string, number> = { attending: 2, not_attending: 1, pending: 0 }
+  const byPlayerGame = new Map<string, NonNullable<typeof attendance>[number]>()
+  for (const row of attendance ?? []) {
+    const key = `${row.game_date}|${row.player_email}`
+    const prev = byPlayerGame.get(key)
+    if (!prev || (rank[row.status] ?? 0) > (rank[prev.status] ?? 0)) byPlayerGame.set(key, row)
+  }
+  const rsvps = [...byPlayerGame.values()]
+  const gameDates = [...new Set(rsvps.map(r => r.game_date as string))]
+
+  const attending = rsvps.filter(a => a.status === 'attending')
+  const pending = rsvps.filter(a => a.status === 'pending')
+  const notAttending = rsvps.filter(a => a.status === 'not_attending')
 
   const teamGroups = attending.reduce((acc: Record<string, typeof attending>, row) => {
     const t = row.team ?? 'Unassigned'
@@ -93,6 +105,50 @@ export default async function AdminPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* RSVP responses by game */}
+      <div className="mt-10">
+        <h2 className="text-xl font-bold text-white mb-4">RSVPs by Game</h2>
+        {gameDates.length === 0 ? (
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 text-center text-slate-400 text-sm">No invites sent yet</div>
+        ) : (
+          <div className="space-y-4">
+            {gameDates.map(date => {
+              const rows = rsvps.filter(r => r.game_date === date)
+              const groups = [
+                { label: 'Attending', color: 'text-green-400', items: rows.filter(r => r.status === 'attending') },
+                { label: 'Pending', color: 'text-yellow-400', items: rows.filter(r => r.status === 'pending') },
+                { label: 'Not Attending', color: 'text-red-400', items: rows.filter(r => r.status === 'not_attending') },
+              ]
+              return (
+                <div key={date} className="bg-slate-800 rounded-2xl border border-slate-700 p-5">
+                  <h3 className="font-bold text-white mb-3">
+                    {new Date(date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                  </h3>
+                  <div className="grid sm:grid-cols-3 gap-4">
+                    {groups.map(g => (
+                      <div key={g.label}>
+                        <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${g.color}`}>{g.label} ({g.items.length})</p>
+                        {g.items.length > 0 ? (
+                          <ul className="space-y-1">
+                            {g.items.map(r => (
+                              <li key={r.id} className="text-sm text-slate-300">
+                                {r.player_name}{r.team ? <span className="text-slate-500"> · {r.team}</span> : null}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-xs text-slate-600 italic">None</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Fixtures & Standings editor */}

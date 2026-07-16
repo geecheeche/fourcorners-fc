@@ -36,6 +36,7 @@ async function getData() {
       const seen = new Set((widgetSignups ?? []).map(s => s.waiver_id))
       for (const r of rsvps ?? []) {
         if (r.player_id && seen.has(r.player_id)) continue
+        if (r.player_id) seen.add(r.player_id)
         signups.push({ id: r.id, first_name: (r.player_name ?? '').split(' ')[0], team: r.team })
       }
     }
