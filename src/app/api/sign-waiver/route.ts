@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     if (process.env.RESEND_API_KEY) {
       try {
         await new Resend(process.env.RESEND_API_KEY).emails.send({
-          from: 'Four Corners FC <noreply@fourcornersfc.com>',
+          from: process.env.EMAIL_FROM ?? 'Four Corners FC <noreply@play4corners.com>',
           to: email,
           subject: 'Waiver Received — Welcome to Four Corners FC!',
           html: `
