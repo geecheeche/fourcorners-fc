@@ -32,29 +32,39 @@ export async function POST(req: NextRequest) {
     let sent = 0
     const failures: string[] = []
     for (const player of players) {
-      const token = uuidv4()
+      // Reuse an existing attendance record for this player+game so a
+      // re-send (e.g. after an email failure) doesn't create duplicates.
+      const { data: existing } = await supabaseAdmin
+        .from('attendance')
+        .select('token')
+        .eq('player_id', player.id)
+        .eq('game_date', gameDate)
+        .maybeSingle()
 
-      // Create attendance record
-      const { error: insertError } = await supabaseAdmin.from('attendance').insert({
-        player_id: player.id,
-        player_email: player.email,
-        player_name: `${player.first_name} ${player.last_name}`,
-        team: player.team,
-        game_date: gameDate,
-        game_time: gameTime,
-        venue,
-        token,
-        status: 'pending',
-      })
-      if (insertError) {
-        failures.push(`${player.email}: ${insertError.message}`)
-        continue
+      let token = existing?.token
+      if (!token) {
+        token = uuidv4()
+        const { error: insertError } = await supabaseAdmin.from('attendance').insert({
+          player_id: player.id,
+          player_email: player.email,
+          player_name: `${player.first_name} ${player.last_name}`,
+          team: player.team,
+          game_date: gameDate,
+          game_time: gameTime,
+          venue,
+          token,
+          status: 'pending',
+        })
+        if (insertError) {
+          failures.push(`${player.email}: ${insertError.message}`)
+          continue
+        }
       }
 
       const rsvpBase = `${process.env.NEXT_PUBLIC_APP_URL}/attendance/${token}`
 
       const { error: sendError } = await resend.emails.send({
-        from: 'Four Corners FC <noreply@fourcornersfc.com>',
+        from: process.env.EMAIL_FROM ?? 'Four Corners FC <noreply@play4corners.com>',
         to: player.email,
         subject: `⚽ Game Day! FCFC — ${gameDate}`,
         html: `
@@ -73,7 +83,7 @@ export async function POST(req: NextRequest) {
                 ❌ Can't Make It
               </a>
             </div>
-            <p style="color:#64748b;font-size:12px;margin-top:24px">Four Corners FC · Maryland · <a href="${process.env.NEXT_PUBLIC_APP_URL}" style="color:#4ade80">fourcornersfc.com</a></p>
+            <p style="color:#64748b;font-size:12px;margin-top:24px">Four Corners FC · Maryland · <a href="${process.env.NEXT_PUBLIC_APP_URL}" style="color:#4ade80">play4corners.com</a></p>
           </div>
         `,
       })
