@@ -22,17 +22,6 @@ export const TEAMS = [
     players: [] as string[],
   },
   {
-    id: 'crunch',
-    name: 'Crunch',
-    color: '#111827',
-    textColor: '#ffffff',
-    shirtColor: 'Black',
-    emoji: '⚫',
-    captain: 'TBD',
-    description: 'Physical, gritty, and never backs down. Crunch plays with intensity.',
-    players: [] as string[],
-  },
-  {
     id: 'big-blue',
     name: 'Big Blue',
     color: '#2563eb',
@@ -69,28 +58,6 @@ export const FIXTURES = [
     status: 'upcoming' as 'upcoming' | 'completed' | 'postponed',
   },
   {
-    id: 2,
-    date: '2026-06-14',
-    time: '11:30 AM',
-    home: 'Crunch',
-    away: 'Big Blue',
-    homeScore: null as number | null,
-    awayScore: null as number | null,
-    venue: 'Four Corners Field, Maryland',
-    status: 'upcoming' as 'upcoming' | 'completed' | 'postponed',
-  },
-  {
-    id: 3,
-    date: '2026-06-21',
-    time: '10:00 AM',
-    home: 'Gang Green',
-    away: 'Crunch',
-    homeScore: null as number | null,
-    awayScore: null as number | null,
-    venue: 'Four Corners Field, Maryland',
-    status: 'upcoming' as 'upcoming' | 'completed' | 'postponed',
-  },
-  {
     id: 4,
     date: '2026-06-21',
     time: '11:30 AM',
@@ -112,23 +79,11 @@ export const FIXTURES = [
     venue: 'Four Corners Field, Maryland',
     status: 'upcoming' as 'upcoming' | 'completed' | 'postponed',
   },
-  {
-    id: 6,
-    date: '2026-06-28',
-    time: '11:30 AM',
-    home: 'White Noise',
-    away: 'Crunch',
-    homeScore: null as number | null,
-    awayScore: null as number | null,
-    venue: 'Four Corners Field, Maryland',
-    status: 'upcoming' as 'upcoming' | 'completed' | 'postponed',
-  },
 ]
 
 export const STANDINGS = [
   { team: 'Gang Green', played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0 },
   { team: 'White Noise', played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0 },
-  { team: 'Crunch', played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0 },
   { team: 'Big Blue', played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0 },
 ]
 

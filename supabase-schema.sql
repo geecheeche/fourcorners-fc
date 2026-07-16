@@ -53,7 +53,7 @@ create table standings (
 );
 
 -- Seed initial standings rows
-insert into standings (team) values ('Gang Green'), ('White Noise'), ('Crunch'), ('Big Blue');
+insert into standings (team) values ('Gang Green'), ('White Noise'), ('Big Blue');
 
 create table game_signups (
   id uuid default gen_random_uuid() primary key,

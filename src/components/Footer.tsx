@@ -25,7 +25,6 @@ export default function Footer() {
           <ul className="space-y-1 text-sm text-slate-400">
             <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-green-600 inline-block" />Gang Green</li>
             <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-gray-400 inline-block" />White Noise</li>
-            <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-slate-800 border border-slate-600 inline-block" />Crunch</li>
             <li className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-blue-600 inline-block" />Big Blue</li>
           </ul>
         </div>

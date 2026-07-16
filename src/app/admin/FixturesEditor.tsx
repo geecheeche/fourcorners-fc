@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 
-const TEAMS_LIST = ['Gang Green', 'White Noise', 'Crunch', 'Big Blue']
+const TEAMS_LIST = ['Gang Green', 'White Noise', 'Big Blue']
 const BLANK_FIXTURE = { date: '', time: '10:00 AM', home: 'Gang Green', away: 'White Noise', home_score: '', away_score: '', venue: 'Four Corners Field, Maryland', status: 'upcoming' }
 
 type Fixture = {
