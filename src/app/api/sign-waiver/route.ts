@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     // Send confirmation email — best-effort. The waiver is already saved,
     // so a missing Resend key or a send failure must not fail the request.
     if (process.env.RESEND_API_KEY) {
+      const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/+$/, '')
       try {
         await new Resend(process.env.RESEND_API_KEY).emails.send({
           from: process.env.EMAIL_FROM ?? 'Four Corners FC <noreply@play4corners.com>',
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
           subject: 'Waiver Received — Welcome to Four Corners FC!',
           html: `
             <div style="font-family:sans-serif;max-width:520px;margin:0 auto;background:#0f172a;color:#f1f5f9;padding:32px;border-radius:16px">
-              <img src="${process.env.NEXT_PUBLIC_APP_URL}/fcfc.jpg" alt="FCFC" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:16px"/>
+              ${appUrl ? `<img src="${appUrl}/fcfc.jpg" alt="FCFC" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:16px"/>` : ''}
               <h1 style="color:#4ade80;margin:0 0 8px">Welcome to FCFC, ${firstName}!</h1>
               <p style="color:#94a3b8">Your waiver has been received and you are now registered with Four Corners FC.</p>
               ${team ? `<p style="color:#94a3b8">Team: <strong style="color:#fff">${team}</strong></p>` : ''}

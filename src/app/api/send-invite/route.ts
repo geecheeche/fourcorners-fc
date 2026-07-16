@@ -21,6 +21,13 @@ export async function POST(req: NextRequest) {
     }
     const resend = new Resend(process.env.RESEND_API_KEY)
 
+    // The RSVP buttons are built from this URL — without it the emails
+    // go out with dead "undefined/attendance/..." links.
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/+$/, '')
+    if (!/^https?:\/\//.test(appUrl)) {
+      return NextResponse.json({ error: 'NEXT_PUBLIC_APP_URL is not configured — set it to your site URL (e.g. https://play4corners.com) so the RSVP links in the emails work.' }, { status: 500 })
+    }
+
     // Fetch all waiver signers
     const { data: players, error } = await supabaseAdmin
       .from('waivers')
@@ -61,7 +68,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const rsvpBase = `${process.env.NEXT_PUBLIC_APP_URL}/attendance/${token}`
+      const rsvpBase = `${appUrl}/attendance/${token}`
 
       const { error: sendError } = await resend.emails.send({
         from: process.env.EMAIL_FROM ?? 'Four Corners FC <noreply@play4corners.com>',
@@ -69,7 +76,7 @@ export async function POST(req: NextRequest) {
         subject: `⚽ Game Day! FCFC — ${gameDate}`,
         html: `
           <div style="font-family:sans-serif;max-width:560px;margin:0 auto;background:#0f172a;color:#f1f5f9;padding:32px;border-radius:16px">
-            <img src="${process.env.NEXT_PUBLIC_APP_URL}/fcfc.jpg" alt="FCFC" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:16px"/>
+            <img src="${appUrl}/fcfc.jpg" alt="FCFC" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:16px"/>
             <h1 style="color:#4ade80;margin:0 0 4px">Game Day!</h1>
             <h2 style="color:#fff;margin:0 0 16px;font-size:18px">${gameDate} at ${gameTime}</h2>
             <p style="color:#94a3b8">Hi ${player.first_name},</p>
@@ -83,7 +90,7 @@ export async function POST(req: NextRequest) {
                 ❌ Can't Make It
               </a>
             </div>
-            <p style="color:#64748b;font-size:12px;margin-top:24px">Four Corners FC · Maryland · <a href="${process.env.NEXT_PUBLIC_APP_URL}" style="color:#4ade80">play4corners.com</a></p>
+            <p style="color:#64748b;font-size:12px;margin-top:24px">Four Corners FC · Maryland · <a href="${appUrl}" style="color:#4ade80">play4corners.com</a></p>
           </div>
         `,
       })
