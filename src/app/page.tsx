@@ -1,6 +1,5 @@
 export const dynamic = 'force-dynamic'
 
-import Image from 'next/image'
 import Link from 'next/link'
 import { TEAMS } from '@/lib/data'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -62,8 +61,8 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative bg-slate-900 pitch-bg overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-green-900/40 via-slate-900/80 to-slate-900" />
+      <section className="relative bg-slate-900 bg-cover bg-center overflow-hidden" style={{ backgroundImage: "url('/field.jpg')" }}>
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/85 via-slate-900/60 to-slate-900/80" />
         <div className="relative max-w-6xl mx-auto px-4 py-24 md:py-36 flex flex-col md:flex-row items-center gap-12">
           <div className="flex-1 text-center md:text-left">
             <div className="inline-flex items-center gap-2 bg-green-900/50 border border-green-700 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-6">
@@ -82,11 +81,6 @@ export default async function HomePage() {
               <Link href="/fixtures" className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl transition-colors border border-slate-700">
                 View Fixtures
               </Link>
-            </div>
-          </div>
-          <div className="flex-shrink-0">
-            <div className="w-56 h-56 md:w-72 md:h-72 rounded-full bg-slate-800 border-4 border-green-600 overflow-hidden shadow-2xl shadow-green-900/50">
-              <Image src="/fcfc.jpg" alt="Four Corners FC" width={288} height={288} className="object-cover w-full h-full" priority />
             </div>
           </div>
         </div>
