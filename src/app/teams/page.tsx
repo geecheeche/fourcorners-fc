@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { TEAMS } from '@/lib/data'
 
 const CAPTAINS: Record<string, { name: string; position: string; bio: string }> = {
@@ -21,7 +22,7 @@ export default function TeamsPage() {
     <div className="max-w-6xl mx-auto px-4 py-12">
       <div className="mb-10 text-center">
         <h1 className="text-4xl font-black text-white mb-3">The Teams</h1>
-        <p className="text-slate-400 max-w-xl mx-auto">Four squads. Every player is assigned to a team for the season. Matches are played in a round-robin format.</p>
+        <p className="text-slate-400 max-w-xl mx-auto">Three squads. Every player is assigned to a team for the season. Matches are played in a round-robin format.</p>
       </div>
 
       <div className="space-y-12">
@@ -60,13 +61,21 @@ export default function TeamsPage() {
                 </div>
               </div>
 
-              {/* Lineup placeholder */}
+              {/* Lineup image */}
               <div className="border-t border-slate-700 p-6">
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Squad Lineup</h3>
-                <div className="bg-slate-900 rounded-2xl p-6 text-center border-2 border-dashed border-slate-700">
-                  <div className="text-4xl mb-3">📸</div>
-                  <p className="text-slate-400 text-sm font-medium">Team lineup photo coming soon</p>
-                  <p className="text-slate-600 text-xs mt-1">Images will be updated before the season kicks off</p>
+                <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">
+                  {team.lineupImage ? (
+                    <div className="relative aspect-[4/3] w-full">
+                      <Image src={team.lineupImage} alt={`${team.name} squad lineup`} fill className="object-cover" />
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center">
+                      <div className="text-4xl mb-3">📸</div>
+                      <p className="text-slate-400 text-sm font-medium">Team lineup photo coming soon</p>
+                      <p className="text-slate-600 text-xs mt-1">Images will be updated before the season kicks off</p>
+                    </div>
+                  )}
                 </div>
               </div>
 

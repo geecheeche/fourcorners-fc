@@ -8,6 +8,7 @@ export const TEAMS = [
     emoji: '🟢',
     captain: 'TBD',
     description: 'The green machine. Known for their relentless pressing and team chemistry.',
+    lineupImage: '/team_images/ganggreen.jpeg',
     players: [] as string[],
   },
   {
@@ -19,6 +20,7 @@ export const TEAMS = [
     emoji: '⚪',
     captain: 'TBD',
     description: 'Cool under pressure. White Noise play a disciplined, structured game.',
+    lineupImage: '/team_images/whitenoise.jpeg',
     players: [] as string[],
   },
   {
@@ -30,6 +32,7 @@ export const TEAMS = [
     emoji: '🔵',
     captain: 'TBD',
     description: 'Big Blue brings creativity and flair to every fixture.',
+    lineupImage: '/team_images/big blue.jpeg',
     players: [] as string[],
   },
 ]
