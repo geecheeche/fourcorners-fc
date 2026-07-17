@@ -37,16 +37,25 @@ export async function POST(req: NextRequest) {
     if (!players?.length) return NextResponse.json({ message: 'No players found', sent: 0 })
 
     let sent = 0
+    let skipped = 0
     const failures: string[] = []
+    const statusRank: Record<string, number> = { attending: 2, not_attending: 1, pending: 0 }
     for (const player of players) {
-      // Reuse an existing attendance record for this player+game so a
-      // re-send (e.g. after an email failure) doesn't create duplicates.
-      const { data: existing } = await supabaseAdmin
+      // Look up prior invite rows for this player+game (earlier bugs could
+      // leave duplicates — take the one with an actual response, if any).
+      const { data: existingRows } = await supabaseAdmin
         .from('attendance')
-        .select('token')
+        .select('token, status')
         .eq('player_id', player.id)
         .eq('game_date', gameDate)
-        .maybeSingle()
+      const existing = (existingRows ?? [])
+        .sort((a, b) => (statusRank[b.status] ?? 0) - (statusRank[a.status] ?? 0))[0]
+
+      // Already responded — don't email them again
+      if (existing && existing.status !== 'pending') {
+        skipped++
+        continue
+      }
 
       let token = existing?.token
       if (!token) {
@@ -104,7 +113,7 @@ export async function POST(req: NextRequest) {
       if (players.length > 1) await new Promise(r => setTimeout(r, 600))
     }
 
-    return NextResponse.json({ success: failures.length === 0, sent, failed: failures.length, failures })
+    return NextResponse.json({ success: failures.length === 0, sent, skipped, failed: failures.length, failures })
   } catch (err: unknown) {
     console.error('send-invite error:', err)
     const message = err instanceof Error ? err.message : 'Unknown server error'

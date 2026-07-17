@@ -19,12 +19,14 @@ export default function SendInviteForm({ adminSecret }: { adminSecret: string })
       const d = await res.json()
       if (!res.ok) {
         setResult(`❌ ${d.error}`)
-      } else if (d.sent === 0 && !d.failed) {
-        setResult('⚠️ No players to invite yet — invites go to everyone who has signed the waiver.')
       } else if (d.failed > 0) {
         setResult(`⚠️ Sent to ${d.sent} players, ${d.failed} failed: ${d.failures?.[0] ?? ''}`)
+      } else if (d.sent === 0 && d.skipped > 0) {
+        setResult(`✅ Everyone has already responded for this date (${d.skipped} players) — no emails sent.`)
+      } else if (d.sent === 0) {
+        setResult('⚠️ No players to invite yet — invites go to everyone who has signed the waiver.')
       } else {
-        setResult(`✅ Sent to ${d.sent} players`)
+        setResult(`✅ Sent to ${d.sent} players${d.skipped > 0 ? ` · skipped ${d.skipped} who already responded` : ''}`)
       }
     } catch {
       setResult('❌ Network error')
