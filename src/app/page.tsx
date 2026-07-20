@@ -6,29 +6,32 @@ import { supabaseAdmin } from '@/lib/supabase'
 import GameSignup from '@/components/GameSignup'
 
 async function getData() {
+  const today = new Date().toISOString().split('T')[0]
+
   try {
     const [{ data: waivers }, { data: fixtures }] = await Promise.all([
       supabaseAdmin.from('waivers').select('first_name, team'),
-      supabaseAdmin.from('fixtures').select('*').eq('status', 'upcoming').gte('date', new Date().toISOString().split('T')[0]).order('date').limit(3),
+      supabaseAdmin.from('fixtures').select('*').eq('status', 'upcoming').gte('date', today).order('date').limit(3),
     ])
 
     // Next upcoming fixture that hasn't happened yet
     const nextGame = fixtures?.[0] ?? null
 
-    // Who's coming to the next game: homepage signups plus email RSVPs
-    // marked attending, deduped by waiver id for players who did both.
     let signups: { id: string; first_name: string; team: string | null }[] = []
     if (nextGame) {
+      // Double-guard: only fetch signups for dates >= today so stale rows never surface
       const [{ data: widgetSignups }, { data: rsvps }] = await Promise.all([
         supabaseAdmin
           .from('game_signups')
           .select('id, waiver_id, first_name, team')
           .eq('game_date', nextGame.date)
+          .gte('game_date', today)
           .order('signed_up_at'),
         supabaseAdmin
           .from('attendance')
           .select('id, player_id, player_name, team')
           .eq('game_date', nextGame.date)
+          .gte('game_date', today)
           .eq('status', 'attending'),
       ])
       signups = (widgetSignups ?? []).map(s => ({ id: s.id, first_name: s.first_name, team: s.team }))
