@@ -9,10 +9,10 @@ async function getData() {
   try {
     const [{ data: waivers }, { data: fixtures }] = await Promise.all([
       supabaseAdmin.from('waivers').select('first_name, team'),
-      supabaseAdmin.from('fixtures').select('*').eq('status', 'upcoming').order('date').limit(3),
+      supabaseAdmin.from('fixtures').select('*').eq('status', 'upcoming').gte('date', new Date().toISOString().split('T')[0]).order('date').limit(3),
     ])
 
-    // Next weekend game (nearest upcoming fixture)
+    // Next upcoming fixture that hasn't happened yet
     const nextGame = fixtures?.[0] ?? null
 
     // Who's coming to the next game: homepage signups plus email RSVPs

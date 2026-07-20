@@ -31,10 +31,12 @@ async function getData() {
 
     return { fixtures: fixtures ?? [], standings: sortedStandings }
   } catch {
-    // Fall back to static data if DB not connected
+    const today = new Date().toISOString().split('T')[0]
     return { fixtures: STATIC_FIXTURES.map(f => ({
       id: String(f.id), date: f.date, time: f.time, home: f.home, away: f.away,
-      home_score: f.homeScore, away_score: f.awayScore, venue: f.venue, status: f.status,
+      home_score: f.homeScore, away_score: f.awayScore, venue: f.venue,
+      // Auto-mark past fixtures as completed if no score set yet
+      status: f.status === 'upcoming' && f.date < today ? 'completed' : f.status,
     })), standings: null }
   }
 }
