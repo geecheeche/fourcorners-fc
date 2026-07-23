@@ -9,10 +9,8 @@ async function getData() {
   const today = new Date().toISOString().split('T')[0]
 
   try {
-    const [{ data: waivers }, { data: fixtures }] = await Promise.all([
-      supabaseAdmin.from('waivers').select('first_name, team'),
-      supabaseAdmin.from('fixtures').select('*').eq('status', 'upcoming').gte('date', today).order('date').limit(3),
-    ])
+    const { data: fixtures } = await supabaseAdmin
+      .from('fixtures').select('*').eq('status', 'upcoming').gte('date', today).order('date').limit(3)
 
     // Next upcoming fixture that hasn't happened yet
     const nextGame = fixtures?.[0] ?? null
@@ -43,22 +41,24 @@ async function getData() {
       }
     }
 
-    // Team rosters from waivers
-    const rosterByTeam: Record<string, string[]> = {}
-    for (const w of waivers ?? []) {
-      const team = w.team ?? 'Unassigned'
-      if (!rosterByTeam[team]) rosterByTeam[team] = []
-      rosterByTeam[team].push(w.first_name)
+    // Who's playing this week, by team — sourced from the same signups as
+    // the next-game card, so it's empty until a game is posted and players
+    // sign up for it (not the permanent season roster from waivers).
+    const thisWeekByTeam: Record<string, string[]> = {}
+    for (const s of signups) {
+      const team = s.team ?? 'Unassigned'
+      if (!thisWeekByTeam[team]) thisWeekByTeam[team] = []
+      thisWeekByTeam[team].push(s.first_name)
     }
 
-    return { fixtures: fixtures ?? [], nextGame, signups, rosterByTeam }
+    return { fixtures: fixtures ?? [], nextGame, signups, thisWeekByTeam }
   } catch {
-    return { fixtures: [], nextGame: null, signups: [], rosterByTeam: {} }
+    return { fixtures: [], nextGame: null, signups: [], thisWeekByTeam: {} }
   }
 }
 
 export default async function HomePage() {
-  const { fixtures, nextGame, signups, rosterByTeam } = await getData()
+  const { fixtures, nextGame, signups, thisWeekByTeam } = await getData()
   const upcoming = fixtures.slice(0, 2)
 
   return (
@@ -132,7 +132,7 @@ export default async function HomePage() {
             <Link key={t.id} href={`/teams#${t.id}`} className="flex items-center gap-2 hover:text-green-400 transition-colors">
               <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: t.color }} />
               {t.name}
-              <span className="text-slate-500 font-normal">({rosterByTeam[t.name]?.length ?? 0})</span>
+              <span className="text-slate-500 font-normal">({thisWeekByTeam[t.name]?.length ?? 0})</span>
             </Link>
           ))}
         </div>
@@ -145,7 +145,7 @@ export default async function HomePage() {
           <h2 className="text-2xl font-bold mb-6 text-white">The Teams</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {TEAMS.map(t => {
-              const players = rosterByTeam[t.name] ?? []
+              const players = thisWeekByTeam[t.name] ?? []
               return (
                 <Link key={t.id} href={`/teams#${t.id}`}
                   className="group bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 hover:border-slate-500 transition-all hover:-translate-y-0.5">
@@ -160,7 +160,7 @@ export default async function HomePage() {
                     {/* Player count + names */}
                     <div className="border-t border-slate-700 pt-3 mt-3">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Squad</span>
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Playing This Week</span>
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: t.color }}>
                           {players.length} {players.length === 1 ? 'player' : 'players'}
                         </span>
@@ -174,7 +174,7 @@ export default async function HomePage() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-slate-600 italic">No players yet</p>
+                        <p className="text-xs text-slate-600 italic">{nextGame ? 'No signups yet' : 'No game scheduled'}</p>
                       )}
                     </div>
                   </div>
