@@ -39,9 +39,18 @@ export default async function AdminPage() {
   const rsvps = [...byPlayerGame.values()]
   const gameDates = [...new Set(rsvps.map(r => r.game_date as string))]
 
-  const attending = rsvps.filter(a => a.status === 'attending')
-  const pending = rsvps.filter(a => a.status === 'pending')
-  const notAttending = rsvps.filter(a => a.status === 'not_attending')
+  // The summary cards below should reflect the game currently being
+  // organized, not every game ever invited — otherwise last week's
+  // attendees stay counted forever with nothing new posted.
+  const today = new Date().toISOString().split('T')[0]
+  const currentGameDate = (fixtures ?? [])
+    .filter(f => f.status === 'upcoming' && f.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date))[0]?.date
+  const currentRsvps = currentGameDate ? rsvps.filter(r => r.game_date === currentGameDate) : []
+
+  const attending = currentRsvps.filter(a => a.status === 'attending')
+  const pending = currentRsvps.filter(a => a.status === 'pending')
+  const notAttending = currentRsvps.filter(a => a.status === 'not_attending')
 
   const teamGroups = attending.reduce((acc: Record<string, typeof attending>, row) => {
     const t = row.team ?? 'Unassigned'
@@ -64,6 +73,11 @@ export default async function AdminPage() {
       </div>
 
       {/* Stats */}
+      <p className="text-xs text-slate-500 mb-2">
+        {currentGameDate
+          ? `RSVP counts below are for the next game — ${new Date(currentGameDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`
+          : 'No upcoming game posted — RSVP counts below are 0 until one is added'}
+      </p>
       <div className="grid sm:grid-cols-4 gap-4 mb-10">
         {[
           { label: 'Waivers Signed', value: waivers?.length ?? 0, color: 'text-green-400' },
@@ -84,8 +98,17 @@ export default async function AdminPage() {
           <SendInviteForm adminSecret={process.env.ADMIN_SECRET!} />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white mb-4">Attending — By Team</h2>
-          {Object.keys(teamGroups).length === 0 ? (
+          <h2 className="text-xl font-bold text-white mb-4">
+            Attending — By Team
+            {currentGameDate && (
+              <span className="text-slate-400 font-normal text-sm ml-2">
+                ({new Date(currentGameDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+              </span>
+            )}
+          </h2>
+          {!currentGameDate ? (
+            <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 text-center text-slate-400 text-sm">No upcoming game posted</div>
+          ) : Object.keys(teamGroups).length === 0 ? (
             <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 text-center text-slate-400 text-sm">No RSVPs yet</div>
           ) : (
             <div className="space-y-3">
